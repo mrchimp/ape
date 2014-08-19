@@ -1,8 +1,13 @@
+
+import ape.lib.basecommand
 from random import choice
 
-class Command():
+class Command(ape.lib.basecommand.BaseCommand):
 
-    def call(self, line):
+    prog_name = '8ball'
+    prog_description = 'Get answers to your questions.'
+
+    def call(self):
         """Answers your questions."""
 
         line = '!'

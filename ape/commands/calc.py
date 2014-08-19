@@ -1,6 +1,11 @@
+
+import ape.lib.basecommand
 from decimal import *
 
-class Command:
+class Command(ape.lib.basecommand.BaseCommand):
+
+    prog_name = 'calc'
+    prog_description = 'Do basic maths.'
 
     def __init__(self):
         self.func_dict = {
@@ -37,7 +42,7 @@ class Command:
         else:
             print("I don't know how to do that.")
 
-    def call(self, line):
+    def call(self):
         while True:
             try:
                 a = input("Enter a value. Q to quit.")
@@ -62,5 +67,5 @@ class Command:
 
     
 if __name__ == "__main__":
-    calc_inst = calc()
-    calc_inst.call()
+    calc_inst = Command()
+    calc_inst.run('')

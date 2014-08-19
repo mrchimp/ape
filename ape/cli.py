@@ -2,12 +2,12 @@
 
 """cli.py - Command line interface for Ape commands"""
 
-
 import os
 import cmd
 import pickle
 import importlib
 from random import choice
+from ape.lib.clicolors import Clicolors
 from ape.lib.chimpbot import Chimpbot
 
 __author__      = "Jacob Gully"
@@ -20,7 +20,10 @@ __email__       = "chimpytk@gmail.com"
 class Cli(cmd.Cmd):
     """Ape CLI"""
 
+    prog_name = 'cli'
+    prog_description = 'Ape CLI.'
     prompt = ""
+    intro = ""
     quotes_file_dat = ""
     quotes_file_txt = ""
     quotes_array = []
@@ -32,30 +35,32 @@ class Cli(cmd.Cmd):
     | Type 'help <command>' to learn more about a command. |
     +------------------------------------------------------+
     """
-    undoc_header = "You'll have to figure these out on your own:\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+    available_commands = [
+        '8ball',
+        'brename',
+        'calc',
+        'cd',
+        'cdnum',
+        'count',
+        'credits',
+        'dir',
+        'rm'
+    ]
 
     def __init__(self):
         super(Cli, self).__init__()
         self.prompt = self.make_prompt()
         self.quotes_file_dat = os.path.dirname(os.path.realpath(__file__)) + '/../data/quotes.dat'
         self.quotes_file_txt = os.path.dirname(os.path.realpath(__file__)) + '/../input/quotes.txt'
-
-
-    def make_prompt(self):
-        """Construct a prompt string."""
-        
-        prompt = os.getcwd() + " >"
-        return prompt.replace(os.getenv('HOME'), '~')
-
-    def preloop(self):
-        """Display welcome text and load Chimpbot."""
-
         self.chimpbot = Chimpbot()
+        self.intro = self.make_intro()
 
-        print("\nApe CLI [Version "+__version__+"]")
-        print(__copyright__+"\n")
+    def make_intro(self):
+        """Create welcome message"""
 
-        # Quote of the minute
+        intro = "\nApe CLI [Version "+__version__+"]\n"
+        intro += __copyright__+"\n\n"
+
         try:
             quote_dat_file = open(self.quotes_file_dat, 'rb')
             self.quotes_array = pickle.load(quote_dat_file)
@@ -81,7 +86,15 @@ class Cli(cmd.Cmd):
             except IOError:
                 self.quotes_array = ['Quotes array is empty.']
         
-        print(choice(self.quotes_array))
+        intro += choice(self.quotes_array)
+
+        return intro
+
+    def make_prompt(self):
+        """Construct a prompt string."""
+        
+        prompt = Clicolors.HEADER + os.getcwd() + " >" + Clicolors.ENDC
+        return prompt.replace(os.getenv('HOME'), '~')
 
     def postloop(self):
         """Prints a goodbye message."""
@@ -94,21 +107,11 @@ class Cli(cmd.Cmd):
         self.prompt = self.make_prompt()
         return cmd.Cmd.postcmd(self, stop, line)
 
-    def my_import(name):
-        mod = __import__(name)
-        components = name.split('.')
-        for comp in components[1:]:
-            mod = getattr(mod, comp)
-        return mod
-
     def default(self, line):
         """
         Called if a command is not recognised. 
         Try importing command or display a random response from Chimpbot.
         """
-    
-        # Command = importlib.import_module('ape.commands.' + line.split(' ', 1)[0])
-        # Command.call()
 
         try:        
             mmodule = importlib.import_module('ape.commands.' + line.split(' ', 1)[0])
@@ -116,11 +119,18 @@ class Cli(cmd.Cmd):
             cmd = cclass()
             cmd.run(line)
         except ImportError:
-            print("\nChimpbot says: Error. " + self.chimpbot.say(line) + "\n")
+            print("\nError: unknown command.\nChimpbot says: " + self.chimpbot.say(line) + "\n")
+            return
+            
     
+    def do_help(self, line):
+        print(self.doc_header);
+        print(' '*4 + ', '.join(self.available_commands))
+        print('')
 
-
+    def do_quit(self, line):
+        return True;
 
 
 if __name__ == '__main__':
-    cli_mate().cmdloop()
+    Cli().cmdloop()
