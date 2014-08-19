@@ -8,8 +8,8 @@ from bs4 import BeautifulSoup
 
 class Command(ape.lib.basecommand.BaseCommand):
 
-    prog_name = 'cd'
-    prog_description = 'Change working directory.'
+    prog_name = 'goto'
+    prog_description = 'A basic text-based web page reader.'
 
     def add_arguments(self):
         self.parser.add_argument('url',
