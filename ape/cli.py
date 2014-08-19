@@ -93,7 +93,7 @@ class Cli(cmd.Cmd):
     def make_prompt(self):
         """Construct a prompt string."""
         
-        prompt = Clicolors.HEADER + os.getcwd() + " >" + Clicolors.ENDC
+        prompt = Clicolors.HEADER + os.getcwd() + "\n$ " + Clicolors.ENDC
         return prompt.replace(os.getenv('HOME'), '~')
 
     def postloop(self):
@@ -102,7 +102,7 @@ class Cli(cmd.Cmd):
         print("\nGoodbye!")
 
     def postcmd(self, stop, line):
-        """Executed after each command. Currently used to update the cmd prompt."""
+        """Executed after each command."""
         
         self.prompt = self.make_prompt()
         return cmd.Cmd.postcmd(self, stop, line)
@@ -113,14 +113,21 @@ class Cli(cmd.Cmd):
         Try importing command or display a random response from Chimpbot.
         """
 
-        try:        
-            mmodule = importlib.import_module('ape.commands.' + line.split(' ', 1)[0])
-            cclass = getattr(mmodule, 'Command')
-            cmd = cclass()
-            cmd.run(line)
-        except ImportError:
-            print("\nError: unknown command.\nChimpbot says: " + self.chimpbot.say(line) + "\n")
-            return
+        mmodule = importlib.import_module('ape.commands.' + line.split(' ', 1)[0])
+        cclass = getattr(mmodule, 'Command')
+        cmd = cclass()
+        cmd.run(line)
+
+        # @todo except here catches exceptions in the imported modules.
+        # This is a pain for developing.
+        # try:        
+        #     mmodule = importlib.import_module('ape.commands.' + line.split(' ', 1)[0])
+        #     cclass = getattr(mmodule, 'Command')
+        #     cmd = cclass()
+        #     cmd.run(line)
+        # except ImportError:
+        #     print("\nError: unknown command.\nChimpbot says: " + self.chimpbot.say(line) + "\n")
+        #     return
             
     
     def do_help(self, line):
