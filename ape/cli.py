@@ -52,7 +52,7 @@ class Cli(cmd.Cmd):
         self.prompt = self.make_prompt()
         self.quotes_file_dat = os.path.dirname(os.path.realpath(__file__)) + '/../data/quotes.dat'
         self.quotes_file_txt = os.path.dirname(os.path.realpath(__file__)) + '/../input/quotes.txt'
-        self.chimpbot = Chimpbot()
+        self.chimpbot = Chimpbot(os.path.dirname(os.path.realpath(__file__)) + '/../../data/default_dict.dat')
         self.intro = self.make_intro()
 
     def make_intro(self):
@@ -137,6 +137,11 @@ class Cli(cmd.Cmd):
 
     def do_quit(self, line):
         return True;
+
+    def do_load2001(self, line):
+        # bot = Chimpbot(os.path.dirname(os.path.realpath(__file__)) + '/../../data/default_dict.dat')
+        self.chimpbot.add_source('input/2001.txt')
+        self.chimpbot.save()
 
 
 if __name__ == '__main__':
