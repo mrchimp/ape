@@ -46,13 +46,16 @@ class Cli(cmd.Cmd):
         'dir',
         'rm'
     ]
+    quotes_file_dat = os.path.realpath(os.path.dirname(__file__) + '/../data/quotes.dat')
+    quotes_file_txt = os.path.realpath(os.path.dirname(__file__) + '/../input/quotes.txt')
+    chimpbot_brain = os.path.realpath(os.path.dirname(__file__) + '/../data/default_dict.dat')
+
 
     def __init__(self):
         super(Cli, self).__init__()
         self.prompt = self.make_prompt()
-        self.quotes_file_dat = os.path.dirname(os.path.realpath(__file__)) + '/../data/quotes.dat'
-        self.quotes_file_txt = os.path.dirname(os.path.realpath(__file__)) + '/../input/quotes.txt'
-        self.chimpbot = Chimpbot(os.path.dirname(os.path.realpath(__file__)) + '/../../data/default_dict.dat')
+        print('Loading brain file: ' + self.chimpbot_brain)
+        self.chimpbot = Chimpbot(self.chimpbot_brain)
         self.intro = self.make_intro()
 
     def make_intro(self):
@@ -128,7 +131,6 @@ class Cli(cmd.Cmd):
         # except ImportError:
         #     print("\nError: unknown command.\nChimpbot says: " + self.chimpbot.say(line) + "\n")
         #     return
-            
     
     def do_help(self, line):
         print(self.doc_header);
@@ -138,10 +140,22 @@ class Cli(cmd.Cmd):
     def do_quit(self, line):
         return True;
 
-    def do_load2001(self, line):
+    def do_a(self, line):
         # bot = Chimpbot(os.path.dirname(os.path.realpath(__file__)) + '/../../data/default_dict.dat')
-        self.chimpbot.add_source('input/2001.txt')
+        dir_list = os.listdir(os.getcwd())
+        for x in range(len(dir_list)):
+            print('file: ' + dir_list[x])
+            self.chimpbot.add_source(dir_list[x])
         self.chimpbot.save()
+
+    def do_b(self, line):
+        self.chimpbot.say('test')
+
+    def do_load2(self, line):
+        # bot = Chimpbot(os.path.dirname(os.path.realpath(__file__)) + '/../../data/default_dict.dat')
+        self.chimpbot.add_source('input/2001-2.txt')
+        self.chimpbot.save()
+
 
 
 if __name__ == '__main__':

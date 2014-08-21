@@ -3,17 +3,29 @@
 # Chimp Bot by Jake Gully
 # Based on lukebot.py - python chat bot in 71 lines
 #   - http://pythonism.wordpress.com/2010/04/18/a-simple-chatbot-in-python/
+#
+# Todo:
+#   Use BeautifulSoup to allow importing from web.
+#   Allow line-break spanning word pairs
 
 import os
 import pickle
 import random
+from ape.lib.helpers import Helpers
 
 class Chimpbot:
+
+    follow = {}    # Word/following-word pairs
+    dict_file = '' # Dictionary file path
 
     def __init__(self, default_dict):
         self.successor_list = ''
         self.current_dict = default_dict
-        self.load(self.current_dict)
+
+        try:
+            self.load(self.current_dict)
+        except IOError:
+            print("Failed to load dictionary.")
 
     def talk(self):
         "Enters a conversation with Chimpbot"
@@ -45,105 +57,110 @@ class Chimpbot:
     def new(self):
         "Clears the current dict."
 
-        self.current_dict = input('Name your new bot: ')
+        self.current_dict = input('Path to new dictionary: ')
         self.successor_list = ''
         
     def nextword(self, a):
         "Gets an appropriate word to follow a given word."
 
+        print(self.successor_list)
+
         if a in self.successor_list:
-            return self.random.choice(self.successor_list[a])
+            return random.choice(self.successor_list[a])
         else:
             return 'the'
 
     def add_source(self, input_file):
         "add contents of input_file to current successor_list"
 
-        print("Attempting to import " + input_file)
-        
-        source_file = open(input_file, 'r')
-        words = []
-        
-        print(source_file)
-        
-        line_count = 0
-        
-        follow = {}
+        total_lines = 0
+        with open(input_file, 'r', encoding='utf-8') as f:
+            for total_lines, l in enumerate(f):
+                pass
+        total_lines = total_lines + 1
 
-        for line in source_file:                                                  # For each line of the file
-            print("line_count=" + str(line_count))
-            
-            word_count = 0
-            
-            # Look through words in lin
-            # add them to list
-            for word in line.split():                                   # split each word into text[]
-                # print("word_count=" + str(word_count))
-                words.append(word)
-                word_count = word_count + 1
-            
-            # Duplicate list
-            line_list = list(set(words))                                 # split text by line into a list
 
-            for l in range(len(line_list)):                             # for each line in list
-                clean_words = []                                            # 
-                check = line_list[l]                                    # 
+        source_file = open(input_file, 'r', encoding='utf-8')
+        line_count = 1
+        
+        print("Importing " + input_file)
+
+        for line in source_file:
+            print(Helpers.make_progress_bar(line_count, total_lines))
+
+            line_words = line.split()
+
+            for word_num in range(0, len(line_words) - 1):
+                following_words = []
+                this_word = line_words[word_num]
                 
-                for w in range(len(words)-1):                            # Check every letter except the last in each word
-                    if check == words[w] and words[w][-1] not in '(),.?!':  #   for punctuation
-                        clean_words.append(str(words[w+1]))                  #   append if there's no punctuation
-
-                follow[check] = clean_words
+                if line_words[word_num][-1] in '(),.?!':
+                    following_words.append(str(line_words[word_num + 1]))
+                
+                if len(following_words) > 0:
+                    try:
+                        self.follow[this_word].extend(following_words)
+                    except KeyError:
+                        self.follow[this_word] = following_words
 
             line_count = line_count + 1
 
-        print(follow)
+        print('Import complete!')
 
         source_file.close()
 
     def load(self, file_name):
-        "Loads a dict file."
+        "Load a pickled dictionary file."
 
-        try:
-            a = open(file_name,'rb')
-            self.successor_list = self.pickle.load(a)
-            a.close()
-        except IOError:
-            print("Failed to load dictionary.")
-
-            self.new()  
+        a = open(file_name,'rb')
+        self.successor_list = pickle.load(a)
+        a.close()
 
     def save(self):
-        "save the current successor list to the current_dict file"
+        "Save the current successor list to the current_dict file"
+    
+        self.current_dict = os.path.realpath(self.current_dict)
+
+        overwriting = False
+
+        if os.path.isfile(self.current_dict):
+            if 'y' != input("Overwrite current dictionary ("+self.current_dict+"), Y/N?"):
+                print('Cancelling.')
+                return;
+            overwriting = True
         
-        overwrite = input("Overwrite current dictionary ("+self.current_dict+"), Y/N?")
+        if not overwriting:
+            print('Creating new file...')
         
-        if overwrite == "n" or overwrite == "N":
-            out_file = input("Enter file name:")
-        else:
-            out_file = self.current_dict
-        
-        a = open(out_file,'wb')
-        pickle.dump(follow,a,2) 
-        a.close()
+        try:
+            a = open(self.current_dict, 'wb')
+            pickle.dump(self.follow, a, 2) 
+            a.close()
+        except FileNotFoundError:
+            print("Couldn't save to file '" + self.current_dict + "'. Check path and try again.")
 
     def say(self, input_str):
         "Pass a string to the bot and return its reply"
         
         if len(input_str) > 0:
-            s = self.random.choice(input_str.split()) # Choose a random word from the input.
+            #s = self.random.choice(input_str.split()) # Choose a random word from the input.
+            s = input_str.rsplit(' ', 1)[0] # Last word of input
         else:
-            s = 'the'
+            s = 'there'
         
+        max_words = 20
+        word_count = 0
         response = ''                 #
         
         while True:                   # LOOP
-            neword = self.nextword(s) #   pick a random word from the input
-            response += ' ' + neword  #   concatenate the word
-            s = neword                #   loop around and get the next word
+            new_word = self.nextword(s) #   pick a random word from the input
+            response += ' ' + new_word  #   concatenate the word
+            s = new_word                #   loop around and get the next word
             
-            if neword[-1] in '?,!.':  # IF we get a full stop then end 
+            if new_word[-1] in '?,!.' or word_count > max_words:  # IF we get a full stop then end 
                 break                 #
+
+            word_count = word_count + 1
 
         return response               # Say something
 
