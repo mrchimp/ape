@@ -143,6 +143,8 @@ class Cli(cmd.Cmd):
         self.chimpbot.add_source('input/2001.txt')
         self.chimpbot.save()
 
+    def do_loadurl(self, line):
+        self.chimpbot.add_url(line, preview = True, depth = 1)
 
 if __name__ == '__main__':
     Cli().cmdloop()
