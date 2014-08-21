@@ -6,6 +6,7 @@
 #
 # Todo:
 #   Use BeautifulSoup to allow importing from web.
+#   Allow crawling links in URLs
 #   Allow line-break spanning word pairs
 
 import os
@@ -109,6 +110,51 @@ class Chimpbot:
 
         source_file.close()
 
+    def add_url(self, url, preview=False, depth=1):
+        "Get contents of a URL and parse the text."
+
+        from bs4 import BeautifulSoup
+        from urllib.request import Request, urlopen
+        from urllib.request import URLError
+
+        if url[0:7] != 'http://' and url[0:8] != 'https://':
+            url = 'http://' + url
+
+
+        req = Request(url)
+        
+        the_text = ''
+
+        try:
+            response = urlopen(req)
+        except URLError as e:
+            if hasattr(e, 'reason'):
+                print("Failed to reach server.")
+                print("Reason: ", e.reason)
+            elif hasattr(e, 'code'):
+                print("The server couldn't fulfill the request.")
+                print("Error code: ", e.code)
+
+            return False
+        else:
+            html = response.read()
+            soup = BeautifulSoup(html)
+            
+            for el in soup.find_all(["h1", "h2", "h3", "p"]):
+                if el.string:
+                    the_text = the_text + el.string
+
+        if preview:
+            print('The following would be parsed:\n\n')
+            print(the_text)
+        else:
+            # @todo - do actual importing
+            print('No importing yet...')
+
+        # @todo - allow following URLs to given depth
+
+
+
     def load(self, file_name):
         "Load a pickled dictionary file."
 
@@ -163,7 +209,7 @@ class Chimpbot:
             word_count = word_count + 1
 
         return response               # Say something
-
+        
 
 if __name__ == "__main__":
     bot = chimpBot()
