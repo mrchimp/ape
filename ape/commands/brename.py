@@ -17,5 +17,4 @@ class Command():
 
 
 if __name__ == "__main__":
-    calc_inst = calc()
-    calc_inst.call()
+    Command().run('')
