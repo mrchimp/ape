@@ -52,7 +52,6 @@ class BaseCommand:
             except SyntaxError:
                 return
 
-
         self.call()
 
 

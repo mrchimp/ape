@@ -12,16 +12,25 @@
 import os
 import pickle
 import random
+import shutil
+import itertools
+import time
+import sys
 from ape.lib.helpers import Helpers
+from collections import defaultdict
 
 class Chimpbot:
 
-    follow = {}    # Word/following-word pairs
+    pairs = {}    # Word/following-word pairs
     dict_file = '' # Dictionary file path
+    terminators = '.!?'
+    default_response = 'Erm.'
+    max_words = 20
+    dict_dir = os.path.realpath(os.path.dirname(__file__) + '../data')
 
-    def __init__(self, default_dict):
-        self.successor_list = ''
-        self.current_dict = default_dict
+    def __init__(self, dict_dir, dict_name):
+        self.dict_dir = dict_dir
+        self.current_dict = self.dict_dir + '/' + dict_name + '.dat'
 
         try:
             self.load(self.current_dict)
@@ -55,60 +64,123 @@ class Chimpbot:
         if (carryon == 'y'):
             print(self.successor_list)
 
-    def new(self):
+    def new(self, name):
         "Clears the current dict."
 
-        self.current_dict = input('Path to new dictionary: ')
-        self.successor_list = ''
+        self.current_dict = input('Name of brain: ')
+        self.pairs = {}
+        self.save()
         
-    def nextword(self, a):
+    def next_word(self, first_word):
         "Gets an appropriate word to follow a given word."
 
-        print(self.successor_list)
+        if first_word[-1] == ',':
+            first_word = first_word[:-1]
 
-        if a in self.successor_list:
-            return random.choice(self.successor_list[a])
-        else:
-            return 'the'
+        try:
+            weights = [x[1] for x in self.pairs[first_word]]
+            totals = list(itertools.accumulate(weights))
+
+            rand = random.uniform(0, totals[-1])
+            for i, total in enumerate(totals):
+                if rand <= total:
+                    return self.pairs[first_word][i][0]
+        except KeyError:
+            return False
+
+    def find_pair_num(self, first_word, second_word):
+        """
+        Find the index of a given next word
+        Returns -1 if first_word doesn't exist
+        Returns -2 if second_word doesn't exist
+        """
+
+        try:
+            for word_num in range(0, len(self.pairs[first_word])):
+                if (self.pairs[first_word][word_num][0] == second_word):
+                    return word_num
+            return -2
+        except KeyError:
+            return -1
 
     def add_source(self, input_file):
         "add contents of input_file to current successor_list"
 
         total_lines = 0
-        with open(input_file, 'r', encoding='utf-8') as f:
-            for total_lines, l in enumerate(f):
-                pass
-        total_lines = total_lines + 1
-
-
         source_file = open(input_file, 'r', encoding='utf-8')
-        line_count = 1
-        
+
         print("Importing " + input_file)
+        print('Getting word list...')
+
+        all_words = []
 
         for line in source_file:
-            print(Helpers.make_progress_bar(line_count, total_lines))
+            total_lines = total_lines + 1
+            for word in line.split():
+                all_words.append(word)
 
-            line_words = line.split()
+        print('Found ' + str(total_lines) + ' lines, ' + str(len(all_words)) + ' words.')
 
-            for word_num in range(0, len(line_words) - 1):
-                following_words = []
-                this_word = line_words[word_num]
-                
-                if line_words[word_num][-1] in '(),.?!':
-                    following_words.append(str(line_words[word_num + 1]))
-                
-                if len(following_words) > 0:
-                    try:
-                        self.follow[this_word].extend(following_words)
-                    except KeyError:
-                        self.follow[this_word] = following_words
+        total_lines = total_lines + 1
+        word_count = 1
 
-            line_count = line_count + 1
+        source_file.seek(0)
+        for word_num in range(0, len(all_words) - 1):
+            # print(Helpers.make_progress_bar(word_count, len(all_words)))
+            self.update_progress(word_count / len(all_words));
+            word_count = word_count + 1
 
+            # If this is a terminating word then skip
+            if all_words[word_num][-1] in ').,?!':
+                continue
+
+            word = all_words[word_num]
+            next_word = all_words[word_num + 1]
+            word_num = self.find_pair_num(word, next_word)
+
+            if word_num >= 0:
+                # Additional use of pair
+                self.pairs[word][word_num] = (next_word, int(self.pairs[word][word_num][1]) +  1)
+            elif word_num == -1:
+                # New first word
+                self.pairs[word] = [(next_word, 1)];
+            elif word_num == -2:
+                # New second word
+                self.pairs[word].append((next_word, 1))
+            else:
+                print('Pretty sure this shouldn\'t happen.')
+            
         print('Import complete!')
+        print(str(len(all_words)) + ' words.')
 
         source_file.close()
+
+    def update_progress(self, progress):
+        """
+        update_progress() : Displays or updates a console progress bar
+        Accepts a float between 0 and 1. Any int will be converted to a float.
+        A value under 0 represents a 'halt'.
+        A value at 1 or bigger represents 100%
+        """
+
+        # shutil.get_terminal_size((80, 20)).columns
+        barLength = 20 # @todo magic number!
+        status = ""
+        if isinstance(progress, int):
+            progress = float(progress)
+        if not isinstance(progress, float):
+            progress = 0
+            status = "error: progress var must be float\r\n"
+        if progress < 0:
+            progress = 0
+            status = "Halt...\r\n"
+        if progress >= 1:
+            progress = 1
+            status = "Done...\r\n"
+        block = int(round(barLength*progress))
+        text = "\rPercent: [{0}] {1}% {2}".format( "#"*block + "-"*(barLength-block), progress*100, status)
+        sys.stdout.write(text)
+        sys.stdout.flush()
 
     def add_url(self, url, preview=False, depth=1):
         "Get contents of a URL and parse the text."
@@ -119,7 +191,6 @@ class Chimpbot:
 
         if url[0:7] != 'http://' and url[0:8] != 'https://':
             url = 'http://' + url
-
 
         req = Request(url)
         
@@ -153,13 +224,11 @@ class Chimpbot:
 
         # @todo - allow following URLs to given depth
 
-
-
     def load(self, file_name):
         "Load a pickled dictionary file."
 
         a = open(file_name,'rb')
-        self.successor_list = pickle.load(a)
+        self.pairs = pickle.load(a)
         a.close()
 
     def save(self):
@@ -172,16 +241,16 @@ class Chimpbot:
         if os.path.isfile(self.current_dict):
             if 'y' != input("Overwrite current dictionary ("+self.current_dict+"), Y/N?"):
                 print('Cancelling.')
-                return;
+                return
             overwriting = True
         
         if not overwriting:
             print('Creating new file...')
         
         try:
-            a = open(self.current_dict, 'wb')
-            pickle.dump(self.follow, a, 2) 
-            a.close()
+            f = open(self.current_dict, 'wb')
+            pickle.dump(self.pairs, f, 2)
+            f.close()
         except FileNotFoundError:
             print("Couldn't save to file '" + self.current_dict + "'. Check path and try again.")
 
@@ -189,26 +258,40 @@ class Chimpbot:
         "Pass a string to the bot and return its reply"
         
         if len(input_str) > 0:
-            #s = self.random.choice(input_str.split()) # Choose a random word from the input.
-            s = input_str.rsplit(' ', 1)[0] # Last word of input
+            #input_word = self.random.choice(input_str.split()) # Choose a random word from the input.
+            input_word = input_str.rsplit(' ', 1)[-1] # Last word of input
         else:
-            s = 'there'
+            input_word = 'there' # @todo: make this not stupid
         
-        max_words = 20
         word_count = 0
-        response = ''                 #
-        
-        while True:                   # LOOP
-            new_word = self.nextword(s) #   pick a random word from the input
-            response += ' ' + new_word  #   concatenate the word
-            s = new_word                #   loop around and get the next word
-            
-            if new_word[-1] in '?,!.' or word_count > max_words:  # IF we get a full stop then end 
-                break                 #
+        response = input_str.title()
+        current_word = input_str
 
-            word_count = word_count + 1
+        while True:
+            next_word = self.next_word(current_word)
 
-        return response               # Say something
+            # Tidy up end of sentence
+            if next_word == False:
+                break
+
+            response += ' ' + next_word
+
+            if word_count > self.max_words:
+                break
+
+            if response[-1] in self.terminators:
+                break
+
+            current_word = next_word
+            word_count += 1
+
+
+        while response[-1] in ',. (:':
+            response = response[:-1]
+
+        response += '.'
+
+        return response
         
 
 if __name__ == "__main__":
