@@ -1,6 +1,9 @@
 
 class Helpers:
 
+    positives = ['y', 'yes', 'oui', 'ja', 'yup', 'yep', 'ya'', yeah', 'sure', 'do it', 'positive', 'affirmative', 'true']
+    negatives = ['n', 'no', 'non', 'nope', 'negative', 'don\'t', 'false']
+
     def makelist(mystr):
         "Take a comma delimited string of numbers and ranges and return a list"
         
@@ -30,3 +33,11 @@ class Helpers:
 
         perc = int((value / total) * width)
         return '[' + ('-'*perc) + (' '*(width - perc)) + ']'
+
+    def is_positive(word):
+        "Returns true if word is positiveish."
+        return any(word in s for s in self.positives)
+
+    def is_negative(word):
+        "Returns true if word is negativeish."
+        return any(word in s for s in self.negative)
