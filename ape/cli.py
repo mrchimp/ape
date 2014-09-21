@@ -6,6 +6,7 @@ import os
 import cmd
 import pickle
 import importlib
+import ape.lib.helpers
 from random import choice
 from ape.lib.clicolors import Clicolors
 from ape.lib.chimpbot import Chimpbot
@@ -48,14 +49,14 @@ class Cli(cmd.Cmd):
     ]
     quotes_file_dat = os.path.realpath(os.path.dirname(__file__) + '/../data/quotes.dat')
     quotes_file_txt = os.path.realpath(os.path.dirname(__file__) + '/../input/quotes.txt')
-    chimpbot_brain = os.path.realpath(os.path.dirname(__file__) + '/../data/default_dict.dat')
+    chimpbot_brain_dir = os.path.realpath(os.path.dirname(__file__) + '/../data/')
 
 
     def __init__(self):
         super(Cli, self).__init__()
         self.prompt = self.make_prompt()
-        print('Loading brain file: ' + self.chimpbot_brain)
-        self.chimpbot = Chimpbot(self.chimpbot_brain)
+        print('Loading brain file: ' + self.chimpbot_brain_dir + '/default_dict.dat')
+        self.chimpbot = Chimpbot(self.chimpbot_brain_dir, 'default_dict')
         self.intro = self.make_intro()
 
     def make_intro(self):
@@ -140,25 +141,31 @@ class Cli(cmd.Cmd):
     def do_quit(self, line):
         return True;
 
-    def do_a(self, line):
-        # bot = Chimpbot(os.path.dirname(os.path.realpath(__file__)) + '/../../data/default_dict.dat')
+    def do_loaddir(self, line):
         dir_list = os.listdir(os.getcwd())
         for x in range(len(dir_list)):
             print('file: ' + dir_list[x])
             self.chimpbot.add_source(dir_list[x])
         self.chimpbot.save()
 
-    def do_b(self, line):
-        self.chimpbot.say('test')
-
-    def do_load2(self, line):
-        # bot = Chimpbot(os.path.dirname(os.path.realpath(__file__)) + '/../../data/default_dict.dat')
-        self.chimpbot.add_source('input/2001-2.txt')
+    def do_loadtest(self, line):
+        self.chimpbot.add_source('input/2001.txt')
         self.chimpbot.save()
+
+    def do_say(self, line):
+        print(self.chimpbot.say(line))
+
+    def do_words(self, line):
+        if line:
+            print(str(self.chimpbot.pairs[line]))
+        else:
+            print(str(self.chimpbot.pairs))
 
     def do_loadurl(self, line):
         self.chimpbot.add_url(line, preview = True, depth = 1)
 
+    def do_newbrain(self, line):
+        self.chimpbot.new();
 
 if __name__ == '__main__':
     Cli().cmdloop()
