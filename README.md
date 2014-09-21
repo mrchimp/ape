@@ -23,3 +23,31 @@ From the root directory run this:
 
     python3 -m ape.cli
 
+
+# Commands #
+
+ * 8ball
+ * brename
+ * calc
+ * cd
+ * cdnum
+ * count
+ * credits
+ * dir
+ * goto
+ * hash
+ * hello
+ * help
+ * quit
+ * rm
+
+# Temporary / dev commands #
+
+These will change or go away in future.
+
+ * loaddir
+ * loadtest
+ * loadurl
+ * say
+ * words
+ * newbrain
